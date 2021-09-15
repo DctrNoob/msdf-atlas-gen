@@ -18,3 +18,8 @@ bin/*.lib
 output.png
 out/
 build/
+*.png
+*.json
+*.ttf
+*.otf
+.DS_Store
