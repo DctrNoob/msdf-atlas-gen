@@ -9,6 +9,11 @@ set(MSDFGEN_USE_CPP11 ON CACHE INTERNAL "Build with C++11 enabled (always enable
 set(MSDFGEN_INSTALL OFF CACHE BOOL "Generate installation target for msdfgen")
 add_subdirectory(msdfgen)
 
+add_subdirectory(
+    ${CMAKE_SOURCE_DIR}/../../ab
+    ${CMAKE_SOURCE_DIR}/../../ab/build
+    EXCLUDE_FROM_ALL)
+
 find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE msdf-atlas-gen_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -55,6 +60,7 @@ if(MSDF_ATLAS_GEN_BUILD_STANDALONE)
     add_executable(msdf-atlas-gen-standalone msdf-atlas-gen/main.cpp)
     set_target_properties(msdf-atlas-gen-standalone PROPERTIES ARCHIVE_OUTPUT_DIRECTORY archive OUTPUT_NAME msdf-atlas-gen)
     target_compile_definitions(msdf-atlas-gen-standalone PUBLIC MSDF_ATLAS_STANDALONE)
-    target_compile_features(msdf-atlas-gen-standalone PUBLIC cxx_std_11)
-    target_link_libraries(msdf-atlas-gen-standalone PUBLIC msdf-atlas-gen::msdf-atlas-gen)
+    target_compile_features(msdf-atlas-gen-standalone PUBLIC cxx_std_17)
+    target_include_directories(msdf-atlas-gen-standalone PUBLIC ${CMAKE_SOURCE_DIR}/../../ab/inc/)
+    target_link_libraries(msdf-atlas-gen-standalone PUBLIC msdf-atlas-gen::msdf-atlas-gen ab)
 endif()
