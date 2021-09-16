@@ -1141,6 +1141,8 @@ int main(int argc, const char *const *argv) {
     const auto &metrics = font.getMetrics();
 
     ab::CTextureFontProperties props;
+    props.m_distanceRange = config.pxRange;
+    props.m_fontSize = config.emSize;
     props.m_emSize = metrics.emSize;
     props.m_lineHeight = metrics.lineHeight;
     props.m_ascender = metrics.ascenderY;
