@@ -22,7 +22,7 @@
 #include <thread>
 #include <vector>
 
-#include "ab/graphics/texturefont.hpp"
+#include "ab/util/fontproperties.hpp"
 #include "msdf-atlas-gen.h"
 
 using namespace msdf_atlas;
@@ -1141,7 +1141,7 @@ int main(int argc, const char *const *argv) {
     const auto &font = fonts.front();
     const auto &metrics = font.getMetrics();
 
-    ab::CTextureFontProperties props;
+    ab::CFontProperties props;
     props.m_distanceRange = config.pxRange;
     props.m_fontSize = config.emSize;
     props.m_emSize = metrics.emSize;
@@ -1170,7 +1170,7 @@ int main(int argc, const char *const *argv) {
           font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
       if ((nullptr != glyph1) && (nullptr != glyph2) &&
           (0 != glyph1->getCodepoint()) && (0 != glyph2->getCodepoint())) {
-        props.m_kernings.insert(
+        props.m_kerning.insert(
             {{glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second});
       }
     }
