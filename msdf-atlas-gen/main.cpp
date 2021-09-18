@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cereal/archives/json.hpp>
+#include <cereal/types/map.hpp>
 #include <cereal/types/set.hpp>
 #include <cmath>
 #include <cstdio>
@@ -1160,6 +1161,31 @@ int main(int argc, const char *const *argv) {
       props.m_glyphs.insert({glyph.getCodepoint(),
                              static_cast<ab::f32_t>(glyph.getAdvance()),
                              aabbBase, aabbAtlas});
+    }
+
+    for (const auto &kerning : font.getKerning()) {
+      const auto glyph1 = font.getGlyph(kerning.first.first);
+      const auto glyph2 = font.getGlyph(kerning.first.second);
+      if ((nullptr != glyph1) && (nullptr != glyph2) &&
+          (0 != glyph1->getCodepoint()) && (0 != glyph2->getCodepoint())) {
+        props.m_kernings.insert(
+            {{glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second});
+      }
+      /*
+      const GlyphGeometry *glyph1 =
+          font.getGlyph(msdfgen::GlyphIndex(kernPair.first.first));
+      const GlyphGeometry *glyph2 =
+          font.getGlyph(msdfgen::GlyphIndex(kernPair.first.second));
+      if (glyph1 && glyph2 && glyph1->getCodepoint() &&
+          glyph2->getCodepoint()) {
+        fputs(firstPair ? "{" : ",{", f);
+        fprintf(f, "\"unicode1\":%u,", glyph1->getCodepoint());
+        fprintf(f, "\"unicode2\":%u,", glyph2->getCodepoint());
+        fprintf(f, "\"advance\":%.17g", kernPair.second);
+        fputs("}", f);
+        firstPair = false;
+      }
+      */
     }
 
     std::fstream fs(config.jsonFilename, std::ios::out);
