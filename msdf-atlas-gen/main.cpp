@@ -1171,21 +1171,6 @@ int main(int argc, const char *const *argv) {
         props.m_kernings.insert(
             {{glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second});
       }
-      /*
-      const GlyphGeometry *glyph1 =
-          font.getGlyph(msdfgen::GlyphIndex(kernPair.first.first));
-      const GlyphGeometry *glyph2 =
-          font.getGlyph(msdfgen::GlyphIndex(kernPair.first.second));
-      if (glyph1 && glyph2 && glyph1->getCodepoint() &&
-          glyph2->getCodepoint()) {
-        fputs(firstPair ? "{" : ",{", f);
-        fprintf(f, "\"unicode1\":%u,", glyph1->getCodepoint());
-        fprintf(f, "\"unicode2\":%u,", glyph2->getCodepoint());
-        fprintf(f, "\"advance\":%.17g", kernPair.second);
-        fputs("}", f);
-        firstPair = false;
-      }
-      */
     }
 
     std::fstream fs(config.jsonFilename, std::ios::out);
