@@ -1164,8 +1164,10 @@ int main(int argc, const char *const *argv) {
     }
 
     for (const auto &kerning : font.getKerning()) {
-      const auto glyph1 = font.getGlyph(kerning.first.first);
-      const auto glyph2 = font.getGlyph(kerning.first.second);
+      const auto glyph1 =
+          font.getGlyph(msdfgen::GlyphIndex(kerning.first.first));
+      const auto glyph2 =
+          font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
       if ((nullptr != glyph1) && (nullptr != glyph2) &&
           (0 != glyph1->getCodepoint()) && (0 != glyph2->getCodepoint())) {
         props.m_kernings.insert(
