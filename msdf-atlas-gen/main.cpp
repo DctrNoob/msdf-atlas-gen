@@ -1178,7 +1178,7 @@ int main(int argc, const char *const *argv) {
     std::fstream fs(config.jsonFilename, std::ios::out);
     if (fs) {
       cereal::JSONOutputArchive outArchive(fs);
-      outArchive(cereal::make_nvp("texture font", props));
+      outArchive(cereal::make_nvp("m_properties", props));
     }
   }
 
