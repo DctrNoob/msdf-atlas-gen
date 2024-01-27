@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cereal/archives/json.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/set.hpp>
+#include <cereal/types/abfixedmap.hpp>
+#include <cereal/types/abflatset.hpp>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -187,8 +187,7 @@ static bool parseAngle(double &value, const char *arg) {
 }
 
 static bool cmpExtension(const char *path, const char *ext) {
-  for (const char *a = path + strlen(path) - 1, *b = ext + strlen(ext) - 1;
-       b >= ext; --a, --b)
+  for (const char *a = path + strlen(path) - 1, *b = ext + strlen(ext) - 1; b >= ext; --a, --b)
     if (a < path || toupper(*a) != toupper(*b)) return false;
   return true;
 }
@@ -227,21 +226,18 @@ struct Configuration {
 
 template <typename T, typename S, int N, GeneratorFunction<S, N> GEN_FN>
 static bool makeAtlas(const std::vector<GlyphGeometry> &glyphs,
-                      const std::vector<FontGeometry> &fonts,
-                      const Configuration &config) {
-  ImmediateAtlasGenerator<S, N, GEN_FN, BitmapAtlasStorage<T, N> > generator(
-      config.width, config.height);
+                      const std::vector<FontGeometry> &fonts, const Configuration &config) {
+  ImmediateAtlasGenerator<S, N, GEN_FN, BitmapAtlasStorage<T, N> > generator(config.width,
+                                                                             config.height);
   generator.setAttributes(config.generatorAttributes);
   generator.setThreadCount(config.threadCount);
   generator.generate(glyphs.data(), glyphs.size());
-  msdfgen::BitmapConstRef<T, N> bitmap =
-      (msdfgen::BitmapConstRef<T, N>)generator.atlasStorage();
+  msdfgen::BitmapConstRef<T, N> bitmap = (msdfgen::BitmapConstRef<T, N>)generator.atlasStorage();
 
   bool success = true;
 
   if (config.imageFilename) {
-    if (saveImage(bitmap, config.imageFormat, config.imageFilename,
-                  config.yDirection))
+    if (saveImage(bitmap, config.imageFormat, config.imageFilename, config.yDirection))
       puts("Atlas image file saved.");
     else {
       success = false;
@@ -256,8 +252,8 @@ static bool makeAtlas(const std::vector<GlyphGeometry> &glyphs,
     arfontProps.imageType = config.imageType;
     arfontProps.imageFormat = config.imageFormat;
     arfontProps.yDirection = config.yDirection;
-    if (exportArteryFont<float>(fonts.data(), fonts.size(), bitmap,
-                                config.arteryFontFilename, arfontProps))
+    if (exportArteryFont<float>(fonts.data(), fonts.size(), bitmap, config.arteryFontFilename,
+                                arfontProps))
       puts("Artery Font file generated.");
     else {
       success = false;
@@ -399,13 +395,11 @@ int main(int argc, const char *const *argv) {
       continue;
     }
     ARG_CASE("-and", 0) {
-      if (!fontInput.fontFilename && !fontInput.charsetFilename &&
-          fontInput.fontScale < 0)
+      if (!fontInput.fontFilename && !fontInput.charsetFilename && fontInput.fontScale < 0)
         ABORT(
             "No font, character set, or font scale specified before -and "
             "separator.");
-      if (!fontInputs.empty() &&
-          !memcmp(&fontInputs.back(), &fontInput, sizeof(FontInput)))
+      if (!fontInputs.empty() && !memcmp(&fontInputs.back(), &fontInput, sizeof(FontInput)))
         ABORT(
             "No changes between subsequent inputs. A different font, character "
             "set, or font scale must be set inbetween -and separators.");
@@ -442,8 +436,7 @@ int main(int argc, const char *const *argv) {
     }
     ARG_CASE("-dimensions", 2) {
       unsigned w, h;
-      if (!(parseUnsigned(w, argv[argPos + 1]) &&
-            parseUnsigned(h, argv[argPos + 2]) && w && h))
+      if (!(parseUnsigned(w, argv[argPos + 1]) && parseUnsigned(h, argv[argPos + 2]) && w && h))
         ABORT(
             "Invalid atlas dimensions. Use -dimensions <width> <height> with "
             "two positive integers.");
@@ -452,15 +445,13 @@ int main(int argc, const char *const *argv) {
       continue;
     }
     ARG_CASE("-pots", 0) {
-      atlasSizeConstraint =
-          TightAtlasPacker::DimensionsConstraint::POWER_OF_TWO_SQUARE;
+      atlasSizeConstraint = TightAtlasPacker::DimensionsConstraint::POWER_OF_TWO_SQUARE;
       fixedWidth = -1, fixedHeight = -1;
       ++argPos;
       continue;
     }
     ARG_CASE("-potr", 0) {
-      atlasSizeConstraint =
-          TightAtlasPacker::DimensionsConstraint::POWER_OF_TWO_RECTANGLE;
+      atlasSizeConstraint = TightAtlasPacker::DimensionsConstraint::POWER_OF_TWO_RECTANGLE;
       fixedWidth = -1, fixedHeight = -1;
       ++argPos;
       continue;
@@ -478,8 +469,7 @@ int main(int argc, const char *const *argv) {
       continue;
     }
     ARG_CASE("-square4", 0) {
-      atlasSizeConstraint =
-          TightAtlasPacker::DimensionsConstraint::MULTIPLE_OF_FOUR_SQUARE;
+      atlasSizeConstraint = TightAtlasPacker::DimensionsConstraint::MULTIPLE_OF_FOUR_SQUARE;
       fixedWidth = -1, fixedHeight = -1;
       ++argPos;
       continue;
@@ -549,51 +539,37 @@ int main(int argc, const char *const *argv) {
       continue;
     }
     ARG_CASE("-errorcorrection", 1) {
-      msdfgen::ErrorCorrectionConfig &ec =
-          config.generatorAttributes.config.errorCorrection;
-      if (!strcmp(argv[argPos + 1], "disabled") ||
-          !strcmp(argv[argPos + 1], "0") || !strcmp(argv[argPos + 1], "none")) {
+      msdfgen::ErrorCorrectionConfig &ec = config.generatorAttributes.config.errorCorrection;
+      if (!strcmp(argv[argPos + 1], "disabled") || !strcmp(argv[argPos + 1], "0") ||
+          !strcmp(argv[argPos + 1], "none")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::DISABLED;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
-      } else if (!strcmp(argv[argPos + 1], "default") ||
-                 !strcmp(argv[argPos + 1], "auto") ||
-                 !strcmp(argv[argPos + 1], "auto-mixed") ||
-                 !strcmp(argv[argPos + 1], "mixed")) {
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
+      } else if (!strcmp(argv[argPos + 1], "default") || !strcmp(argv[argPos + 1], "auto") ||
+                 !strcmp(argv[argPos + 1], "auto-mixed") || !strcmp(argv[argPos + 1], "mixed")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::EDGE_PRIORITY;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::CHECK_DISTANCE_AT_EDGE;
-      } else if (!strcmp(argv[argPos + 1], "auto-fast") ||
-                 !strcmp(argv[argPos + 1], "fast")) {
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::CHECK_DISTANCE_AT_EDGE;
+      } else if (!strcmp(argv[argPos + 1], "auto-fast") || !strcmp(argv[argPos + 1], "fast")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::EDGE_PRIORITY;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
-      } else if (!strcmp(argv[argPos + 1], "auto-full") ||
-                 !strcmp(argv[argPos + 1], "full")) {
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
+      } else if (!strcmp(argv[argPos + 1], "auto-full") || !strcmp(argv[argPos + 1], "full")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::EDGE_PRIORITY;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
       } else if (!strcmp(argv[argPos + 1], "distance") ||
                  !strcmp(argv[argPos + 1], "distance-fast") ||
                  !strcmp(argv[argPos + 1], "indiscriminate") ||
                  !strcmp(argv[argPos + 1], "indiscriminate-fast")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::INDISCRIMINATE;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
       } else if (!strcmp(argv[argPos + 1], "distance-full") ||
                  !strcmp(argv[argPos + 1], "indiscriminate-full")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::INDISCRIMINATE;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
       } else if (!strcmp(argv[argPos + 1], "edge-fast")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::EDGE_ONLY;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
-      } else if (!strcmp(argv[argPos + 1], "edge") ||
-                 !strcmp(argv[argPos + 1], "edge-full")) {
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
+      } else if (!strcmp(argv[argPos + 1], "edge") || !strcmp(argv[argPos + 1], "edge-full")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::EDGE_ONLY;
-        ec.distanceCheckMode =
-            msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
+        ec.distanceCheckMode = msdfgen::ErrorCorrectionConfig::ALWAYS_CHECK_DISTANCE;
       } else if (!strcmp(argv[argPos + 1], "help")) {
         puts(errorCorrectionHelpText);
         return 0;
@@ -627,14 +603,11 @@ int main(int argc, const char *const *argv) {
     }
     ARG_CASE("-coloringstrategy", 1) {
       if (!strcmp(argv[argPos + 1], "simple"))
-        config.edgeColoring = msdfgen::edgeColoringSimple,
-        config.expensiveColoring = false;
+        config.edgeColoring = msdfgen::edgeColoringSimple, config.expensiveColoring = false;
       else if (!strcmp(argv[argPos + 1], "inktrap"))
-        config.edgeColoring = msdfgen::edgeColoringInkTrap,
-        config.expensiveColoring = false;
+        config.edgeColoring = msdfgen::edgeColoringInkTrap, config.expensiveColoring = false;
       else if (!strcmp(argv[argPos + 1], "distance"))
-        config.edgeColoring = msdfgen::edgeColoringByDistance,
-        config.expensiveColoring = true;
+        config.edgeColoring = msdfgen::edgeColoringByDistance, config.expensiveColoring = true;
       else
         puts("Unknown coloring strategy specified.");
       argPos += 2;
@@ -692,8 +665,7 @@ int main(int argc, const char *const *argv) {
     }
     ARG_CASE("-seed", 1) {
       if (!parseUnsignedLL(config.coloringSeed, argv[argPos + 1]))
-        ABORT(
-            "Invalid seed. Use -seed <N> with N being a non-negative integer.");
+        ABORT("Invalid seed. Use -seed <N> with N being a non-negative integer.");
       argPos += 2;
       continue;
     }
@@ -730,9 +702,8 @@ int main(int argc, const char *const *argv) {
     return 0;
   }
   if (!fontInput.fontFilename) ABORT("No font specified.");
-  if (!(config.arteryFontFilename || config.imageFilename ||
-        config.jsonFilename || config.csvFilename ||
-        config.shadronPreviewFilename)) {
+  if (!(config.arteryFontFilename || config.imageFilename || config.jsonFilename ||
+        config.csvFilename || config.shadronPreviewFilename)) {
     puts("No output specified.");
     return 0;
   }
@@ -740,8 +711,8 @@ int main(int argc, const char *const *argv) {
 
   // Finalize font inputs
   const FontInput *nextFontInput = &fontInput;
-  for (std::vector<FontInput>::reverse_iterator it = fontInputs.rbegin();
-       it != fontInputs.rend(); ++it) {
+  for (std::vector<FontInput>::reverse_iterator it = fontInputs.rbegin(); it != fontInputs.rend();
+       ++it) {
     if (!it->fontFilename && nextFontInput->fontFilename)
       it->fontFilename = nextFontInput->fontFilename;
     if (!it->charsetFilename && nextFontInput->charsetFilename) {
@@ -752,13 +723,11 @@ int main(int argc, const char *const *argv) {
       it->fontScale = nextFontInput->fontScale;
     nextFontInput = &*it;
   }
-  if (fontInputs.empty() ||
-      memcmp(&fontInputs.back(), &fontInput, sizeof(FontInput)))
+  if (fontInputs.empty() || memcmp(&fontInputs.back(), &fontInput, sizeof(FontInput)))
     fontInputs.push_back(fontInput);
 
   // Fix up configuration based on related values
-  if (!(config.imageType == ImageType::PSDF ||
-        config.imageType == ImageType::MSDF ||
+  if (!(config.imageType == ImageType::PSDF || config.imageType == ImageType::MSDF ||
         config.imageType == ImageType::MTSDF))
     config.miterLimit = 0;
   if (config.emSize > minEmSize) minEmSize = config.emSize;
@@ -766,18 +735,16 @@ int main(int argc, const char *const *argv) {
     puts("Neither atlas size nor glyph size selected, using default...");
     minEmSize = MSDF_ATLAS_DEFAULT_EM_SIZE;
   }
-  if (!(config.imageType == ImageType::SDF ||
-        config.imageType == ImageType::PSDF ||
-        config.imageType == ImageType::MSDF ||
-        config.imageType == ImageType::MTSDF)) {
+  if (!(config.imageType == ImageType::SDF || config.imageType == ImageType::PSDF ||
+        config.imageType == ImageType::MSDF || config.imageType == ImageType::MTSDF)) {
     rangeMode = RANGE_PIXEL;
     rangeValue = (double)(config.imageType == ImageType::SOFT_MASK);
   } else if (rangeValue <= 0) {
     rangeMode = RANGE_PIXEL;
     rangeValue = DEFAULT_PIXEL_RANGE;
   }
-  if (config.kerning && !(config.arteryFontFilename || config.jsonFilename ||
-                          config.shadronPreviewFilename))
+  if (config.kerning &&
+      !(config.arteryFontFilename || config.jsonFilename || config.shadronPreviewFilename))
     config.kerning = false;
   if (config.threadCount <= 0)
     config.threadCount = std::max((int)std::thread::hardware_concurrency(), 1);
@@ -829,18 +796,15 @@ int main(int argc, const char *const *argv) {
     imageFormatName = "png";
     // If image format is not specified and -imageout is the only image output,
     // infer format from its extension
-    if (imageExtension != ImageFormat::UNSPECIFIED &&
-        !config.arteryFontFilename)
+    if (imageExtension != ImageFormat::UNSPECIFIED && !config.arteryFontFilename)
       config.imageFormat = imageExtension;
   }
-  if (config.imageType == ImageType::MTSDF &&
-      config.imageFormat == ImageFormat::BMP)
+  if (config.imageType == ImageType::MTSDF && config.imageFormat == ImageFormat::BMP)
     ABORT(
         "Atlas type not compatible with image format. MTSDF requires a format "
         "with alpha channel.");
   if (config.arteryFontFilename &&
-      !(config.imageFormat == ImageFormat::PNG ||
-        config.imageFormat == ImageFormat::BINARY ||
+      !(config.imageFormat == ImageFormat::PNG || config.imageFormat == ImageFormat::BINARY ||
         config.imageFormat == ImageFormat::BINARY_FLOAT)) {
     config.arteryFontFilename = nullptr;
     result = 1;
@@ -848,9 +812,8 @@ int main(int argc, const char *const *argv) {
         "Error: Unable to create an Artery Font file with the specified image "
         "format!");
     // Recheck whether there is anything else to do
-    if (!(config.arteryFontFilename || config.imageFilename ||
-          config.jsonFilename || config.csvFilename ||
-          config.shadronPreviewFilename))
+    if (!(config.arteryFontFilename || config.imageFilename || config.jsonFilename ||
+          config.csvFilename || config.shadronPreviewFilename))
       return result;
     layoutOnly = !(config.arteryFontFilename || config.imageFilename);
   }
@@ -878,8 +841,7 @@ int main(int argc, const char *const *argv) {
   }
   imageFormatName = nullptr;  // No longer consistent with imageFormat
   bool floatingPointFormat =
-      (config.imageFormat == ImageFormat::TIFF ||
-       config.imageFormat == ImageFormat::TEXT_FLOAT ||
+      (config.imageFormat == ImageFormat::TIFF || config.imageFormat == ImageFormat::TEXT_FLOAT ||
        config.imageFormat == ImageFormat::BINARY_FLOAT ||
        config.imageFormat == ImageFormat::BINARY_FLOAT_BE);
 
@@ -894,10 +856,7 @@ int main(int argc, const char *const *argv) {
       const char *fontFilename;
 
      public:
-      FontHolder()
-          : ft(msdfgen::initializeFreetype()),
-            font(nullptr),
-            fontFilename(nullptr) {}
+      FontHolder() : ft(msdfgen::initializeFreetype()), font(nullptr), fontFilename(nullptr) {}
       ~FontHolder() {
         if (ft) {
           if (font) msdfgen::destroyFont(font);
@@ -906,8 +865,7 @@ int main(int argc, const char *const *argv) {
       }
       bool load(const char *fontFilename) {
         if (ft && fontFilename) {
-          if (this->fontFilename && !strcmp(this->fontFilename, fontFilename))
-            return true;
+          if (this->fontFilename && !strcmp(this->fontFilename, fontFilename)) return true;
           if (font) msdfgen::destroyFont(font);
           if ((font = msdfgen::loadFont(ft, fontFilename))) {
             this->fontFilename = fontFilename;
@@ -921,18 +879,15 @@ int main(int argc, const char *const *argv) {
     } font;
 
     for (FontInput &fontInput : fontInputs) {
-      if (!font.load(fontInput.fontFilename))
-        ABORT("Failed to load specified font file.");
+      if (!font.load(fontInput.fontFilename)) ABORT("Failed to load specified font file.");
       if (fontInput.fontScale <= 0) fontInput.fontScale = 1;
 
       // Load character set
       Charset charset;
       if (fontInput.charsetFilename) {
         if (!charset.load(fontInput.charsetFilename,
-                          fontInput.glyphIdentifierType !=
-                              GlyphIdentifierType::UNICODE_CODEPOINT))
-          ABORT(fontInput.glyphIdentifierType ==
-                        GlyphIdentifierType::GLYPH_INDEX
+                          fontInput.glyphIdentifierType != GlyphIdentifierType::UNICODE_CODEPOINT))
+          ABORT(fontInput.glyphIdentifierType == GlyphIdentifierType::GLYPH_INDEX
                     ? "Failed to load glyph set specification."
                     : "Failed to load character set specification.");
       } else {
@@ -945,49 +900,46 @@ int main(int argc, const char *const *argv) {
       int glyphsLoaded = -1;
       switch (fontInput.glyphIdentifierType) {
         case GlyphIdentifierType::GLYPH_INDEX:
-          glyphsLoaded = fontGeometry.loadGlyphset(
-              font, fontInput.fontScale, charset, config.preprocessGeometry,
-              config.kerning);
+          glyphsLoaded = fontGeometry.loadGlyphset(font, fontInput.fontScale, charset,
+                                                   config.preprocessGeometry, config.kerning);
           break;
         case GlyphIdentifierType::UNICODE_CODEPOINT:
-          glyphsLoaded = fontGeometry.loadCharset(
-              font, fontInput.fontScale, charset, config.preprocessGeometry,
-              config.kerning);
+          glyphsLoaded = fontGeometry.loadCharset(font, fontInput.fontScale, charset,
+                                                  config.preprocessGeometry, config.kerning);
           anyCodepointsAvailable |= glyphsLoaded > 0;
           break;
       }
       if (glyphsLoaded < 0) ABORT("Failed to load glyphs from font.");
-      printf("Loaded geometry of %d out of %d glyphs", glyphsLoaded,
-             (int)charset.size());
-      if (fontInputs.size() > 1)
-        printf(" from font \"%s\"", fontInput.fontFilename);
+      printf("Loaded geometry of %d out of %d glyphs", glyphsLoaded, (int)charset.size());
+      if (fontInputs.size() > 1) printf(" from font \"%s\"", fontInput.fontFilename);
       printf(".\n");
       // List missing glyphs
       if (glyphsLoaded < (int)charset.size()) {
-        printf("Missing %d %s", (int)charset.size() - glyphsLoaded,
-               fontInput.glyphIdentifierType ==
-                       GlyphIdentifierType::UNICODE_CODEPOINT
+        printf("WARNING: missing %d %s", (int)charset.size() - glyphsLoaded,
+               fontInput.glyphIdentifierType == GlyphIdentifierType::UNICODE_CODEPOINT
                    ? "codepoints"
                    : "glyphs");
+        /*
         bool first = true;
         switch (fontInput.glyphIdentifierType) {
-          case GlyphIdentifierType::GLYPH_INDEX:
-            for (unicode_t cp : charset)
-              if (!fontGeometry.getGlyph(msdfgen::GlyphIndex(cp)))
-                printf("%c 0x%02X", first ? ((first = false), ':') : ',', cp);
-            break;
-          case GlyphIdentifierType::UNICODE_CODEPOINT:
-            for (unicode_t cp : charset)
-              if (!fontGeometry.getGlyph(cp))
-                printf("%c 0x%02X", first ? ((first = false), ':') : ',', cp);
-            break;
+        case GlyphIdentifierType::GLYPH_INDEX:
+        for (unicode_t cp : charset)
+          if (!fontGeometry.getGlyph(msdfgen::GlyphIndex(cp)))
+            printf("%c 0x%02X", first ? ((first = false), ':') : ',', cp);
+        break;
+        case GlyphIdentifierType::UNICODE_CODEPOINT:
+        for (unicode_t cp : charset)
+          if (!fontGeometry.getGlyph(cp))
+            printf("%c 0x%02X", first ? ((first = false), ':') : ',', cp);
+        break;
         }
+        */
         printf("\n");
       }
 
       if (fontInput.fontName) fontGeometry.setName(fontInput.fontName);
 
-      fonts.push_back((FontGeometry &&) fontGeometry);
+      fonts.push_back((FontGeometry &&)fontGeometry);
     }
   }
   if (glyphs.empty()) ABORT("No glyphs loaded.");
@@ -1010,10 +962,8 @@ int main(int argc, const char *const *argv) {
       atlasPacker.setDimensions(fixedWidth, fixedHeight);
     else
       atlasPacker.setDimensionsConstraint(atlasSizeConstraint);
-    atlasPacker.setPadding(config.imageType == ImageType::MSDF ||
-                                   config.imageType == ImageType::MTSDF
-                               ? 0
-                               : -1);
+    atlasPacker.setPadding(
+        config.imageType == ImageType::MSDF || config.imageType == ImageType::MTSDF ? 0 : -1);
     // TODO: In this case (if padding is -1), the border pixels of each glyph
     // are black, but still computed. For floating-point output, this may play a
     // role.
@@ -1028,34 +978,30 @@ int main(int argc, const char *const *argv) {
       if (remaining < 0) {
         ABORT("Failed to pack glyphs into atlas.");
       } else {
-        printf("Error: Could not fit %d out of %d glyphs into the atlas.\n",
-               remaining, (int)glyphs.size());
+        printf("Error: Could not fit %d out of %d glyphs into the atlas.\n", remaining,
+               (int)glyphs.size());
         return 1;
       }
     }
     atlasPacker.getDimensions(config.width, config.height);
-    if (!(config.width > 0 && config.height > 0))
-      ABORT("Unable to determine atlas size.");
+    if (!(config.width > 0 && config.height > 0)) ABORT("Unable to determine atlas size.");
     config.emSize = atlasPacker.getScale();
     config.pxRange = atlasPacker.getPixelRange();
     if (!fixedScale) printf("Glyph size: %.9g pixels/EM\n", config.emSize);
-    if (!fixedDimensions)
-      printf("Atlas dimensions: %d x %d\n", config.width, config.height);
+    if (!fixedDimensions) printf("Atlas dimensions: %d x %d\n", config.width, config.height);
   }
 
   // Generate atlas bitmap
   if (!layoutOnly) {
     // Edge coloring
-    if (config.imageType == ImageType::MSDF ||
-        config.imageType == ImageType::MTSDF) {
+    if (config.imageType == ImageType::MSDF || config.imageType == ImageType::MTSDF) {
       if (config.expensiveColoring) {
         Workload(
             [&glyphs, &config](int i, int) -> bool {
               unsigned long long glyphSeed =
                   (LCG_MULTIPLIER * (config.coloringSeed ^ i) + LCG_INCREMENT) *
                   !!config.coloringSeed;
-              glyphs[i].edgeColoring(config.edgeColoring, config.angleThreshold,
-                                     glyphSeed);
+              glyphs[i].edgeColoring(config.edgeColoring, config.angleThreshold, glyphSeed);
               return true;
             },
             glyphs.size())
@@ -1064,8 +1010,7 @@ int main(int argc, const char *const *argv) {
         unsigned long long glyphSeed = config.coloringSeed;
         for (GlyphGeometry &glyph : glyphs) {
           glyphSeed *= LCG_MULTIPLIER;
-          glyph.edgeColoring(config.edgeColoring, config.angleThreshold,
-                             glyphSeed);
+          glyph.edgeColoring(config.edgeColoring, config.angleThreshold, glyphSeed);
         }
       }
     }
@@ -1074,52 +1019,42 @@ int main(int argc, const char *const *argv) {
     switch (config.imageType) {
       case ImageType::HARD_MASK:
         if (floatingPointFormat)
-          success = makeAtlas<float, float, 1, scanlineGenerator>(glyphs, fonts,
-                                                                  config);
+          success = makeAtlas<float, float, 1, scanlineGenerator>(glyphs, fonts, config);
         else
-          success = makeAtlas<byte, float, 1, scanlineGenerator>(glyphs, fonts,
-                                                                 config);
+          success = makeAtlas<byte, float, 1, scanlineGenerator>(glyphs, fonts, config);
         break;
       case ImageType::SOFT_MASK:
       case ImageType::SDF:
         if (floatingPointFormat)
-          success =
-              makeAtlas<float, float, 1, sdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<float, float, 1, sdfGenerator>(glyphs, fonts, config);
         else
-          success =
-              makeAtlas<byte, float, 1, sdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<byte, float, 1, sdfGenerator>(glyphs, fonts, config);
         break;
       case ImageType::PSDF:
         if (floatingPointFormat)
-          success =
-              makeAtlas<float, float, 1, psdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<float, float, 1, psdfGenerator>(glyphs, fonts, config);
         else
-          success =
-              makeAtlas<byte, float, 1, psdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<byte, float, 1, psdfGenerator>(glyphs, fonts, config);
         break;
       case ImageType::MSDF:
         if (floatingPointFormat)
-          success =
-              makeAtlas<float, float, 3, msdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<float, float, 3, msdfGenerator>(glyphs, fonts, config);
         else
-          success =
-              makeAtlas<byte, float, 3, msdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<byte, float, 3, msdfGenerator>(glyphs, fonts, config);
         break;
       case ImageType::MTSDF:
         if (floatingPointFormat)
-          success =
-              makeAtlas<float, float, 4, mtsdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<float, float, 4, mtsdfGenerator>(glyphs, fonts, config);
         else
-          success =
-              makeAtlas<byte, float, 4, mtsdfGenerator>(glyphs, fonts, config);
+          success = makeAtlas<byte, float, 4, mtsdfGenerator>(glyphs, fonts, config);
         break;
     }
     if (!success) result = 1;
   }
 
   if (config.csvFilename) {
-    if (exportCSV(fonts.data(), fonts.size(), config.width, config.height,
-                  config.yDirection, config.csvFilename))
+    if (exportCSV(fonts.data(), fonts.size(), config.width, config.height, config.yDirection,
+                  config.csvFilename))
       puts("Glyph layout written into CSV file.");
     else {
       result = 1;
@@ -1151,34 +1086,39 @@ int main(int argc, const char *const *argv) {
     props.m_underlineY = metrics.underlineY;
     props.m_underlineThickness = metrics.underlineThickness;
 
-    for (const auto &glyph : font.getGlyphs()) {
-      double l, b, r, t;
-      glyph.getQuadPlaneBounds(l, b, r, t);
-      const ab::rect_f32_t aabbBase(l, r, -t, -b);
-      glyph.getQuadAtlasBounds(l, b, r, t);
-      const ab::rect_f32_t aabbAtlas(l, r, config.height - t,
-                                     config.height - b);
-      props.m_glyphs.insert({glyph.getCodepoint(),
-                             static_cast<ab::f32_t>(glyph.getAdvance()),
-                             aabbBase, aabbAtlas});
-    }
-
-    for (const auto &kerning : font.getKerning()) {
-      const auto glyph1 =
-          font.getGlyph(msdfgen::GlyphIndex(kerning.first.first));
-      const auto glyph2 =
-          font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
-      if ((nullptr != glyph1) && (nullptr != glyph2) &&
-          (0 != glyph1->getCodepoint()) && (0 != glyph2->getCodepoint())) {
-        props.m_kerning.insert(
-            {{glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second});
+    if (font.getGlyphs().size() > props.m_glyphs.max_size()) {
+      result = -1;
+      printf("Glyph container capacity (%zu) insufficient for requested size (%zu)\n",
+             props.m_glyphs.max_size(), font.getGlyphs().size());
+    } else if (font.getKerning().size() > props.m_kerning.capacity()) {
+      result = -1;
+      printf("Kerning container capacity (%zu) insufficient for requested size (%zu)\n",
+             props.m_kerning.max_size(), font.getKerning().size());
+    } else {
+      for (const auto &glyph : font.getGlyphs()) {
+        double l, b, r, t;
+        glyph.getQuadPlaneBounds(l, b, r, t);
+        const ab::rect_f32_t aabbBase(l, r, -t, -b);
+        glyph.getQuadAtlasBounds(l, b, r, t);
+        const ab::rect_f32_t aabbAtlas(l, r, config.height - t, config.height - b);
+        props.m_glyphs.insert({glyph.getCodepoint(), static_cast<ab::f32_t>(glyph.getAdvance()),
+                               aabbBase, aabbAtlas});
       }
-    }
 
-    std::fstream fs(config.jsonFilename, std::ios::out);
-    if (fs) {
-      cereal::JSONOutputArchive outArchive(fs);
-      outArchive(cereal::make_nvp("m_properties", props));
+      for (const auto &kerning : font.getKerning()) {
+        const auto glyph1 = font.getGlyph(msdfgen::GlyphIndex(kerning.first.first));
+        const auto glyph2 = font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
+        if ((nullptr != glyph1) && (nullptr != glyph2) && (0 != glyph1->getCodepoint()) &&
+            (0 != glyph2->getCodepoint())) {
+          props.m_kerning.emplace({glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second);
+        }
+      }
+
+      std::fstream fs(config.jsonFilename, std::ios::out);
+      if (fs) {
+        cereal::JSONOutputArchive outArchive(fs);
+        outArchive(cereal::make_nvp("m_properties", props));
+      }
     }
   }
 
@@ -1187,10 +1127,9 @@ int main(int argc, const char *const *argv) {
       std::vector<unicode_t> previewText;
       utf8Decode(previewText, config.shadronPreviewText);
       previewText.push_back(0);
-      if (generateShadronPreview(fonts.data(), fonts.size(), config.imageType,
-                                 config.width, config.height, config.pxRange,
-                                 previewText.data(), config.imageFilename,
-                                 floatingPointFormat,
+      if (generateShadronPreview(fonts.data(), fonts.size(), config.imageType, config.width,
+                                 config.height, config.pxRange, previewText.data(),
+                                 config.imageFilename, floatingPointFormat,
                                  config.shadronPreviewFilename))
         puts("Shadron preview script generated.");
       else {
