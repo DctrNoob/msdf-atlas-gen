@@ -13,8 +13,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cereal/archives/json.hpp>
-#include <cereal/types/abfixedmap.hpp>
-#include <cereal/types/abflatset.hpp>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -22,6 +20,9 @@
 #include <thread>
 #include <vector>
 
+#include "ab/cereal/container/fixedmap.hpp"
+#include "ab/cereal/container/flatset.hpp"
+#include "ab/cereal/util/fontproperties.hpp"
 #include "ab/util/fontproperties.hpp"
 #include "msdf-atlas-gen.h"
 
@@ -1117,7 +1118,7 @@ int main(int argc, const char *const *argv) {
       std::fstream fs(config.jsonFilename, std::ios::out);
       if (fs) {
         cereal::JSONOutputArchive outArchive(fs);
-        outArchive(cereal::make_nvp("m_properties", props));
+        outArchive(cereal::make_nvp("Font Properties", props));
       }
     }
   }
