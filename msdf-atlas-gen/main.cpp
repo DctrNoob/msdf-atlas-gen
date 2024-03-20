@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "ab/cereal/container/fixedmap.hpp"
-#include "ab/cereal/container/flatset.hpp"
 #include "ab/cereal/util/fontproperties.hpp"
 #include "ab/util/fontproperties.hpp"
 #include "msdf-atlas-gen.h"
@@ -1078,23 +1077,23 @@ int main(int argc, const char *const *argv) {
     const auto &metrics = font.getMetrics();
 
     ab::CFontProperties props;
-    props.m_distanceRange = config.pxRange;
-    props.m_fontSize = config.emSize;
-    props.m_emSize = metrics.emSize;
-    props.m_lineHeight = metrics.lineHeight;
-    props.m_ascender = metrics.ascenderY;
-    props.m_descender = metrics.descenderY;
-    props.m_underlineY = metrics.underlineY;
-    props.m_underlineThickness = metrics.underlineThickness;
+    props.distanceRange = config.pxRange;
+    props.fontSize = config.emSize;
+    props.emSize = metrics.emSize;
+    props.lineHeight = metrics.lineHeight;
+    props.ascender = metrics.ascenderY;
+    props.descender = metrics.descenderY;
+    props.underlineY = metrics.underlineY;
+    props.underlineThickness = metrics.underlineThickness;
 
-    if (font.getGlyphs().size() > props.m_glyphs.max_size()) {
+    if (font.getGlyphs().size() > props.glyphs.max_size()) {
       result = -1;
       printf("Glyph container capacity (%zu) insufficient for requested size (%zu)\n",
-             props.m_glyphs.max_size(), font.getGlyphs().size());
-    } else if (font.getKerning().size() > props.m_kerning.capacity()) {
+             props.glyphs.max_size(), font.getGlyphs().size());
+    } else if (font.getKerning().size() > props.kerning.capacity()) {
       result = -1;
       printf("Kerning container capacity (%zu) insufficient for requested size (%zu)\n",
-             props.m_kerning.max_size(), font.getKerning().size());
+             props.kerning.max_size(), font.getKerning().size());
     } else {
       for (const auto &glyph : font.getGlyphs()) {
         double l, b, r, t;
@@ -1102,8 +1101,8 @@ int main(int argc, const char *const *argv) {
         const ab::rect_f32_t aabbBase(l, r, -t, -b);
         glyph.getQuadAtlasBounds(l, b, r, t);
         const ab::rect_f32_t aabbAtlas(l, r, config.height - t, config.height - b);
-        props.m_glyphs.insert({glyph.getCodepoint(), static_cast<ab::f32_t>(glyph.getAdvance()),
-                               aabbBase, aabbAtlas});
+        props.glyphs.insert({glyph.getCodepoint(), static_cast<ab::f32_t>(glyph.getAdvance()),
+                             aabbBase, aabbAtlas});
       }
 
       for (const auto &kerning : font.getKerning()) {
@@ -1111,7 +1110,7 @@ int main(int argc, const char *const *argv) {
         const auto glyph2 = font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
         if ((nullptr != glyph1) && (nullptr != glyph2) && (0 != glyph1->getCodepoint()) &&
             (0 != glyph2->getCodepoint())) {
-          props.m_kerning.emplace({glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second);
+          props.kerning.emplace({glyph1->getCodepoint(), glyph2->getCodepoint()}, kerning.second);
         }
       }
 
