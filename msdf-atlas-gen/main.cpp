@@ -1098,9 +1098,9 @@ int main(int argc, const char *const *argv) {
       for (const auto &glyph : font.getGlyphs()) {
         double l, b, r, t;
         glyph.getQuadPlaneBounds(l, b, r, t);
-        const ab::rect_f32_t aabbBase(l, r, -t, -b);
+        const ab::rect_t aabbBase(l, r, -t, -b);
         glyph.getQuadAtlasBounds(l, b, r, t);
-        const ab::rect_f32_t aabbAtlas(l, r, config.height - t, config.height - b);
+        const ab::rect_t aabbAtlas(l, r, config.height - t, config.height - b);
         props.glyphs.insert({glyph.getCodepoint(), static_cast<ab::f32_t>(glyph.getAdvance()),
                              aabbBase, aabbAtlas});
       }
