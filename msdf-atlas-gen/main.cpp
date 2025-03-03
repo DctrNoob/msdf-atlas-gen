@@ -12,7 +12,6 @@
 #define _USE_MATH_DEFINES
 #include <algorithm>
 #include <cassert>
-#include <cereal/archives/json.hpp>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -20,9 +19,8 @@
 #include <thread>
 #include <vector>
 
-#include "ab/cereal/container/fixedmap.hpp"
-#include "ab/cereal/util/fontproperties.hpp"
-#include "ab/util/fontproperties.hpp"
+#include "ab/serialization/json_io.hpp"
+#include "ab/serialization/manual_serialization.hpp"
 #include "msdf-atlas-gen.h"
 
 using namespace msdf_atlas;
@@ -1114,11 +1112,7 @@ int main(int argc, const char *const *argv) {
         }
       }
 
-      std::fstream fs(config.jsonFilename, std::ios::out);
-      if (fs) {
-        cereal::JSONOutputArchive outArchive(fs);
-        outArchive(cereal::make_nvp("Font Properties", props));
-      }
+      ab::save_json(config.jsonFilename, "Font Properties", props);
     }
   }
 
