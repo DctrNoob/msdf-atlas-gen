@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "ab/serialization/json_io.hpp"
-#include "ab/serialization/manual_serialization.hpp"
+#include "ab/serialization/manual.hpp"
 #include "msdf-atlas-gen.h"
 
 using namespace msdf_atlas;
@@ -41,7 +41,7 @@ using namespace msdf_atlas;
 #define EXTRA_UNDERLINE
 #endif
 
-static const char *const helpText =
+static const char* const helpText =
     R"(
 MSDF Atlas Generator by Viktor Chlumsky v)" MSDF_ATLAS_VERSION
     R"( (with MSDFGEN v)" MSDFGEN_VERSION TITLE_SUFFIX R"()
@@ -134,7 +134,7 @@ DISTANCE FIELD GENERATOR SETTINGS
       Sets the number of threads for the parallel computation. (0 = auto)
 )";
 
-static const char *errorCorrectionHelpText = R"(
+static const char* errorCorrectionHelpText = R"(
 ERROR CORRECTION MODES
   auto-fast
       Detects inversion artifacts and distance errors that do not affect edges by range testing.
@@ -158,22 +158,22 @@ ERROR CORRECTION MODES
 
 static char toupper(char c) { return c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c; }
 
-static bool parseUnsigned(unsigned &value, const char *arg) {
+static bool parseUnsigned(unsigned& value, const char* arg) {
   static char c;
   return sscanf(arg, "%u%c", &value, &c) == 1;
 }
 
-static bool parseUnsignedLL(unsigned long long &value, const char *arg) {
+static bool parseUnsignedLL(unsigned long long& value, const char* arg) {
   static char c;
   return sscanf(arg, "%llu%c", &value, &c) == 1;
 }
 
-static bool parseDouble(double &value, const char *arg) {
+static bool parseDouble(double& value, const char* arg) {
   static char c;
   return sscanf(arg, "%lf%c", &value, &c) == 1;
 }
 
-static bool parseAngle(double &value, const char *arg) {
+static bool parseAngle(double& value, const char* arg) {
   char c1, c2;
   int result = sscanf(arg, "%lf%c%c", &value, &c1, &c2);
   if (result == 1) return true;
@@ -184,18 +184,18 @@ static bool parseAngle(double &value, const char *arg) {
   return false;
 }
 
-static bool cmpExtension(const char *path, const char *ext) {
+static bool cmpExtension(const char* path, const char* ext) {
   for (const char *a = path + strlen(path) - 1, *b = ext + strlen(ext) - 1; b >= ext; --a, --b)
     if (a < path || toupper(*a) != toupper(*b)) return false;
   return true;
 }
 
 struct FontInput {
-  const char *fontFilename;
+  const char* fontFilename;
   GlyphIdentifierType glyphIdentifierType;
-  const char *charsetFilename;
+  const char* charsetFilename;
   double fontScale;
-  const char *fontName;
+  const char* fontName;
 };
 
 struct Configuration {
@@ -207,24 +207,24 @@ struct Configuration {
   double pxRange;
   double angleThreshold;
   double miterLimit;
-  void (*edgeColoring)(msdfgen::Shape &, double, unsigned long long);
+  void (*edgeColoring)(msdfgen::Shape&, double, unsigned long long);
   bool expensiveColoring;
   unsigned long long coloringSeed;
   GeneratorAttributes generatorAttributes;
   bool preprocessGeometry;
   bool kerning;
   int threadCount;
-  const char *arteryFontFilename;
-  const char *imageFilename;
-  const char *jsonFilename;
-  const char *csvFilename;
-  const char *shadronPreviewFilename;
-  const char *shadronPreviewText;
+  const char* arteryFontFilename;
+  const char* imageFilename;
+  const char* jsonFilename;
+  const char* csvFilename;
+  const char* shadronPreviewFilename;
+  const char* shadronPreviewText;
 };
 
 template <typename T, typename S, int N, GeneratorFunction<S, N> GEN_FN>
-static bool makeAtlas(const std::vector<GlyphGeometry> &glyphs,
-                      const std::vector<FontGeometry> &fonts, const Configuration &config) {
+static bool makeAtlas(const std::vector<GlyphGeometry>& glyphs,
+                      const std::vector<FontGeometry>& fonts, const Configuration& config) {
   ImmediateAtlasGenerator<S, N, GEN_FN, BitmapAtlasStorage<T, N> > generator(config.width,
                                                                              config.height);
   generator.setAttributes(config.generatorAttributes);
@@ -262,7 +262,7 @@ static bool makeAtlas(const std::vector<GlyphGeometry> &glyphs,
   return success;
 }
 
-int main(int argc, const char *const *argv) {
+int main(int argc, const char* const* argv) {
 #define ABORT(msg) \
   {                \
     puts(msg);     \
@@ -280,7 +280,7 @@ int main(int argc, const char *const *argv) {
   config.yDirection = YDirection::BOTTOM_UP;
   config.edgeColoring = msdfgen::edgeColoringInkTrap;
   config.kerning = true;
-  const char *imageFormatName = nullptr;
+  const char* imageFormatName = nullptr;
   int fixedWidth = -1, fixedHeight = -1;
   config.preprocessGeometry = (
 #ifdef MSDFGEN_USE_SKIA
@@ -310,7 +310,7 @@ int main(int argc, const char *const *argv) {
   bool suggestHelp = false;
   bool explicitErrorCorrectionMode = false;
   while (argPos < argc) {
-    const char *arg = argv[argPos];
+    const char* arg = argv[argPos];
 #define ARG_CASE(s, p) if (!strcmp(arg, s) && argPos + (p) < argc)
 
     ARG_CASE("-type", 1) {
@@ -537,7 +537,7 @@ int main(int argc, const char *const *argv) {
       continue;
     }
     ARG_CASE("-errorcorrection", 1) {
-      msdfgen::ErrorCorrectionConfig &ec = config.generatorAttributes.config.errorCorrection;
+      msdfgen::ErrorCorrectionConfig& ec = config.generatorAttributes.config.errorCorrection;
       if (!strcmp(argv[argPos + 1], "disabled") || !strcmp(argv[argPos + 1], "0") ||
           !strcmp(argv[argPos + 1], "none")) {
         ec.mode = msdfgen::ErrorCorrectionConfig::DISABLED;
@@ -708,7 +708,7 @@ int main(int argc, const char *const *argv) {
   bool layoutOnly = !(config.arteryFontFilename || config.imageFilename);
 
   // Finalize font inputs
-  const FontInput *nextFontInput = &fontInput;
+  const FontInput* nextFontInput = &fontInput;
   for (std::vector<FontInput>::reverse_iterator it = fontInputs.rbegin(); it != fontInputs.rend();
        ++it) {
     if (!it->fontFilename && nextFontInput->fontFilename)
@@ -750,7 +750,7 @@ int main(int argc, const char *const *argv) {
     if (explicitErrorCorrectionMode &&
         config.generatorAttributes.config.errorCorrection.distanceCheckMode !=
             msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE) {
-      const char *fallbackModeName = "unknown";
+      const char* fallbackModeName = "unknown";
       switch (config.generatorAttributes.config.errorCorrection.mode) {
         case msdfgen::ErrorCorrectionConfig::DISABLED:
           fallbackModeName = "disabled";
@@ -849,9 +849,9 @@ int main(int argc, const char *const *argv) {
   bool anyCodepointsAvailable = false;
   {
     class FontHolder {
-      msdfgen::FreetypeHandle *ft;
-      msdfgen::FontHandle *font;
-      const char *fontFilename;
+      msdfgen::FreetypeHandle* ft;
+      msdfgen::FontHandle* font;
+      const char* fontFilename;
 
      public:
       FontHolder() : ft(msdfgen::initializeFreetype()), font(nullptr), fontFilename(nullptr) {}
@@ -861,7 +861,7 @@ int main(int argc, const char *const *argv) {
           msdfgen::deinitializeFreetype(ft);
         }
       }
-      bool load(const char *fontFilename) {
+      bool load(const char* fontFilename) {
         if (ft && fontFilename) {
           if (this->fontFilename && !strcmp(this->fontFilename, fontFilename)) return true;
           if (font) msdfgen::destroyFont(font);
@@ -873,10 +873,10 @@ int main(int argc, const char *const *argv) {
         }
         return false;
       }
-      operator msdfgen::FontHandle *() const { return font; }
+      operator msdfgen::FontHandle*() const { return font; }
     } font;
 
-    for (FontInput &fontInput : fontInputs) {
+    for (FontInput& fontInput : fontInputs) {
       if (!font.load(fontInput.fontFilename)) ABORT("Failed to load specified font file.");
       if (fontInput.fontScale <= 0) fontInput.fontScale = 1;
 
@@ -937,7 +937,7 @@ int main(int argc, const char *const *argv) {
 
       if (fontInput.fontName) fontGeometry.setName(fontInput.fontName);
 
-      fonts.push_back((FontGeometry &&)fontGeometry);
+      fonts.push_back((FontGeometry&&)fontGeometry);
     }
   }
   if (glyphs.empty()) ABORT("No glyphs loaded.");
@@ -1006,7 +1006,7 @@ int main(int argc, const char *const *argv) {
             .finish(config.threadCount);
       } else {
         unsigned long long glyphSeed = config.coloringSeed;
-        for (GlyphGeometry &glyph : glyphs) {
+        for (GlyphGeometry& glyph : glyphs) {
           glyphSeed *= LCG_MULTIPLIER;
           glyph.edgeColoring(config.edgeColoring, config.angleThreshold, glyphSeed);
         }
@@ -1071,8 +1071,8 @@ int main(int argc, const char *const *argv) {
     }
     */
 
-    const auto &font = fonts.front();
-    const auto &metrics = font.getMetrics();
+    const auto& font = fonts.front();
+    const auto& metrics = font.getMetrics();
 
     ab::CFontProperties props;
     props.distanceRange = config.pxRange;
@@ -1093,7 +1093,7 @@ int main(int argc, const char *const *argv) {
       printf("Kerning container capacity (%zu) insufficient for requested size (%zu)\n",
              props.kerning.max_size(), font.getKerning().size());
     } else {
-      for (const auto &glyph : font.getGlyphs()) {
+      for (const auto& glyph : font.getGlyphs()) {
         double l, b, r, t;
         glyph.getQuadPlaneBounds(l, b, r, t);
         const ab::rect_t aabbBase(l, r, -t, -b);
@@ -1103,7 +1103,7 @@ int main(int argc, const char *const *argv) {
                              aabbBase, aabbAtlas});
       }
 
-      for (const auto &kerning : font.getKerning()) {
+      for (const auto& kerning : font.getKerning()) {
         const auto glyph1 = font.getGlyph(msdfgen::GlyphIndex(kerning.first.first));
         const auto glyph2 = font.getGlyph(msdfgen::GlyphIndex(kerning.first.second));
         if ((nullptr != glyph1) && (nullptr != glyph2) && (0 != glyph1->getCodepoint()) &&
